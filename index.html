@@ -1,64 +1,8 @@
 <!DOCTYPE html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>SCS Spatial Lab</title>
- 
-<link rel="stylesheet"
-href="https://js.arcgis.com/4.34/esri/themes/light/main.css">
- 
-https://js.arcgis.com/4.34/script>
- 
-<style>
-html, body, #viewDiv {
-height: 100%;
-width: 100%;
-margin: 0;
-padding: 0;
-}
- 
-#header {
-position: absolute;
-top: 10px;
-left: 10px;
-z-index: 99;
-background: white;
-padding: 10px;
-border-radius: 6px;
-font-family: Arial, sans-serif;
-box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-}
-</style>
- 
-</head>
 <body>
- 
-<div id="header">
-<b>SCS Spatial Lab</b><br>
-ArcGIS Online Test
-</div>
- 
-<div id="viewDiv"></div>
- 
-<script>
-require([
-"esri/Map",
-"esri/views/MapView"
-], function(Map, MapView) {
- 
-const map = new Map({
-basemap: "topo-vector"
-});
- 
-const view = new MapView({
-container: "viewDiv",
-map: map,
-center: [151.8, -32.9],
-zoom: 7
-});
- 
-});
-</script>
- 
+
+<h1>Hello Ori</h1>
+
 </body>
 </html>
