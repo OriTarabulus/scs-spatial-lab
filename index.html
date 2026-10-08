@@ -1,13 +1,69 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SCS Spatial Lab</title>
+  <meta charset="utf-8" />
+  <title>SCS Spatial Lab</title>
+
+  <link rel="stylesheet"
+    href="https://js.arcgis.com/4.34/esri/themes/light/main.css">
+
+  <script src="  html, body, #viewDiv {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    #header {
+      position: absolute;
+      z-index: 10;
+      top: 10px;
+      left: 10px;
+      background: white;
+      padding: 10px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      font-family: Arial, sans-serif;
+    }
+  </style>
 </head>
+
 <body>
 
-<h1>SCS Spatial Lab</h1>
+<div id="header">
+  <b>SCS Spatial Lab</b><br>
+  GitHub + ArcGIS Online
+</div>
 
-<p>If you can see this page, GitHub Pages is working.</p>
+<div id="viewDiv"></div>
+
+<script>
+require([
+  "esri/Map",
+  "esri/views/MapView",
+  "esri/layers/FeatureLayer"
+], function(Map, MapView, FeatureLayer) {
+
+  const teamLayer = new FeatureLayer({
+    url: "https://services9.arcgis.com/n6hZlg3qgjAlTZRC/arcgis/rest/services/TeamAreas_Map_WFL1/FeatureServer/1"
+  });
+
+  const map = new Map({
+    basemap: "topo-vector",
+    layers: [teamLayer]
+  });
+
+  const view = new MapView({
+    container: "viewDiv",
+    map: map
+  });
+
+  teamLayer.when(() => {
+    view.goTo(teamLayer.fullExtent);
+  });
+
+});
+</script>
 
 </body>
 </html>
