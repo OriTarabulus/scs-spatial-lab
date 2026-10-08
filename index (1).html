@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SCS Spatial Lab</title>
+
+  <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css">
+  <script src="https://js.arcgis.com/4.34/"></script>
+
+  <style>
+    html, body, #viewDiv {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    #header {
+      position: absolute;
+      top: 15px;
+      left: 65px;
+      z-index: 10;
+      padding: 12px 16px;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+      font-family: Arial, sans-serif;
+    }
+
+    #status {
+      margin-top: 4px;
+      color: #555;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div id="header">
+    <strong>SCS Spatial Lab</strong>
+    <div id="status">Loading Team Areas...</div>
+  </div>
+
+  <div id="viewDiv"></div>
+
+  <script>
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/FeatureLayer"
+    ], function (Map, MapView, FeatureLayer) {
+
+      const teamLayer = new FeatureLayer({
+        url: "https://services9.arcgis.com/n6hZlg3qgjAlTZRC/arcgis/rest/services/TeamAreas_Map_WFL1/FeatureServer/1",
+        outFields: ["*"],
+        popupEnabled: true
+      });
+
+      const map = new Map({
+        basemap: "topo-vector",
+        layers: [teamLayer]
+      });
+
+      const view = new MapView({
+        container: "viewDiv",
+        map: map,
+        center: [151.8, -32.9],
+        zoom: 7
+      });
+
+      teamLayer.when(function () {
+        document.getElementById("status").textContent = "Team Areas loaded";
+        if (teamLayer.fullExtent) {
+          view.goTo(teamLayer.fullExtent.expand(1.15));
+        }
+      }).catch(function (error) {
+        document.getElementById("status").textContent = "Layer failed to load. Check browser console.";
+        console.error("Team Areas layer error:", error);
+      });
+    });
+  </script>
+</body>
+</html>
