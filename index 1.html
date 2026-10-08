@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SCS Spatial Lab</title>
+
+  <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css">
+  <script src="https://js.arcgis.com/4.34/"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      color: #202020;
+    }
+
+    #app {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      height: 100%;
+    }
+
+    #sidebar {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background: #ffffff;
+      border-right: 1px solid #d8d8d8;
+      z-index: 2;
+    }
+
+    #sidebarHeader {
+      padding: 20px;
+      background: #333028;
+      color: #ede4d3;
+    }
+
+    #sidebarHeader h1 {
+      margin: 0 0 6px;
+      font-size: 21px;
+    }
+
+    #status {
+      font-size: 12px;
+      opacity: 0.85;
+    }
+
+    #searchWrap {
+      padding: 14px;
+      border-bottom: 1px solid #e3e3e3;
+    }
+
+    #searchInput {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #b8b8b8;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    #resultCount {
+      margin-top: 8px;
+      color: #666;
+      font-size: 12px;
+    }
+
+    #featureList {
+      flex: 1;
+      overflow-y: auto;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .featureItem {
+      width: 100%;
+      padding: 13px 16px;
+      border: 0;
+      border-bottom: 1px solid #ececec;
+      background: #fff;
+      color: #222;
+      text-align: left;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .featureItem:hover,
+    .featureItem:focus {
+      background: #f1eee7;
+      outline: none;
+    }
+
+    .featureItem.active {
+      background: #ded8c9;
+      font-weight: 700;
+    }
+
+    #mapPanel {
+      position: relative;
+      min-width: 0;
+    }
+
+    #viewDiv {
+      position: absolute;
+      inset: 0;
+    }
+
+    @media (max-width: 720px) {
+      #app {
+        grid-template-columns: 1fr;
+        grid-template-rows: 42% 58%;
+      }
+
+      #sidebar {
+        border-right: 0;
+        border-bottom: 1px solid #d8d8d8;
+      }
+
+      #sidebarHeader {
+        padding: 12px 14px;
+      }
+
+      #sidebarHeader h1 {
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main id="app">
+    <aside id="sidebar" aria-label="Team Areas">
+      <header id="sidebarHeader">
+        <h1>SCS Spatial Lab</h1>
+        <div id="status">Loading Team Areas...</div>
+      </header>
+
+      <div id="searchWrap">
+        <label for="searchInput">Search Team Areas</label>
+        <input id="searchInput" type="search" placeholder="Type an area name..." autocomplete="off">
+        <div id="resultCount"></div>
+      </div>
+
+      <ul id="featureList" aria-label="Team Area results"></ul>
+    </aside>
+
+    <section id="mapPanel" aria-label="Interactive map">
+      <div id="viewDiv"></div>
+    </section>
+  </main>
+
+  <script>
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/FeatureLayer"
+    ], function (Map, MapView, FeatureLayer) {
+
+      const layerUrl = "https://services9.arcgis.com/n6hZlg3qgjAlTZRC/arcgis/rest/services/TeamAreas_Map_WFL1/FeatureServer/1";
+      const statusElement = document.getElementById("status");
+      const searchInput = document.getElementById("searchInput");
+      const featureList = document.getElementById("featureList");
+      const resultCount = document.getElementById("resultCount");
+
+      let allFeatures = [];
+      let displayField = null;
+      let selectedObjectId = null;
+
+      const teamLayer = new FeatureLayer({
+        url: layerUrl,
+        outFields: ["*"],
+        popupEnabled: true
+      });
+
+      const map = new Map({
+        basemap: "topo-vector",
+        layers: [teamLayer]
+      });
+
+      const view = new MapView({
+        container: "viewDiv",
+        map: map,
+        center: [151.8, -32.9],
+        zoom: 7,
+        popup: {
+          dockEnabled: true,
+          dockOptions: {
+            position: "bottom-right",
+            buttonEnabled: false
+          }
+        }
+      });
+
+      function featureLabel(feature) {
+        const attrs = feature.attributes || {};
+        const fallbackField = teamLayer.objectIdField;
+        const value = attrs[displayField] ?? attrs[fallbackField];
+        return value == null ? "Unnamed area" : String(value);
+      }
+
+      function renderList(features) {
+        featureList.innerHTML = "";
+        resultCount.textContent = features.length + (features.length === 1 ? " area" : " areas");
+
+        features.forEach(function (feature) {
+          const objectId = feature.attributes[teamLayer.objectIdField];
+          const listItem = document.createElement("li");
+          const button = document.createElement("button");
+
+          button.type = "button";
+          button.className = "featureItem";
+          button.textContent = featureLabel(feature);
+          button.dataset.objectId = objectId;
+
+          if (objectId === selectedObjectId) {
+            button.classList.add("active");
+          }
+
+          button.addEventListener("click", function () {
+            selectedObjectId = objectId;
+            document.querySelectorAll(".featureItem").forEach(function (item) {
+              item.classList.toggle("active", item.dataset.objectId === String(objectId));
+            });
+
+            view.goTo(feature.geometry.extent ? feature.geometry.extent.expand(1.5) : feature.geometry)
+              .then(function () {
+                view.openPopup({
+                  features: [feature],
+                  location: feature.geometry.extent ? feature.geometry.extent.center : feature.geometry
+                });
+              })
+              .catch(function (error) {
+                if (error.name !== "AbortError") console.error(error);
+              });
+          });
+
+          listItem.appendChild(button);
+          featureList.appendChild(listItem);
+        });
+      }
+
+      function filterList() {
+        const searchText = searchInput.value.trim().toLowerCase();
+        const filtered = allFeatures.filter(function (feature) {
+          return featureLabel(feature).toLowerCase().includes(searchText);
+        });
+        renderList(filtered);
+      }
+
+      searchInput.addEventListener("input", filterList);
+
+      Promise.all([teamLayer.load(), view.when()])
+        .then(function () {
+          displayField = teamLayer.displayField || teamLayer.objectIdField;
+
+          return teamLayer.queryFeatures({
+            where: "1=1",
+            outFields: ["*"],
+            returnGeometry: true,
+            orderByFields: displayField ? [displayField] : []
+          });
+        })
+        .then(function (result) {
+          allFeatures = result.features;
+          renderList(allFeatures);
+          statusElement.textContent = "Team Areas loaded";
+
+          if (teamLayer.fullExtent) {
+            view.goTo(teamLayer.fullExtent.expand(1.1));
+          }
+        })
+        .catch(function (error) {
+          statusElement.textContent = "Unable to load Team Areas";
+          resultCount.textContent = "Check the browser console for details.";
+          console.error("Team Areas application error:", error);
+        });
+    });
+  </script>
+</body>
+</html>
